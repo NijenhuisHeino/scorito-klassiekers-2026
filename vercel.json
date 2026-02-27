@@ -1,12 +1,3 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/public/$1" }
-  ],
-  "functions": {
-    "api/*.py": {
-      "runtime": "@vercel/python@4.5.0",
-      "maxDuration": 30
-    }
-  }
+  "outputDirectory": "public"
 }

@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 data/cache/
 .streamlit/secrets.toml
+.vercel

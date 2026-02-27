@@ -6,453 +6,340 @@
     <title>Scorito Klassiekers 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        scorito: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' }
-                    }
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { colors: {
+            scorito: { 50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e' }
+        }}}}
     </script>
     <style>
-        .loader { border: 3px solid #e0f2fe; border-top: 3px solid #0ea5e9; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .tab-active { border-bottom: 3px solid #0ea5e9; color: #0369a1; font-weight: 600; }
-        .quality-bar { height: 8px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
-        .quality-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-        table { border-collapse: collapse; width: 100%; }
-        th { position: sticky; top: 0; background: #f8fafc; z-index: 10; cursor: pointer; user-select: none; }
-        th:hover { background: #e0f2fe; }
-        td, th { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-        tr:hover { background: #f0f9ff; }
-        .kopman-1 { background: linear-gradient(90deg, #fef3c7, transparent); }
-        .kopman-2 { background: linear-gradient(90deg, #e5e7eb, transparent); }
-        .kopman-3 { background: linear-gradient(90deg, #fed7aa, transparent); }
+        .loader{border:3px solid #e0f2fe;border-top:3px solid #0ea5e9;border-radius:50%;width:24px;height:24px;animation:spin .8s linear infinite;display:inline-block}
+        @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+        .tab-active{border-bottom:3px solid #0ea5e9;color:#0369a1;font-weight:600}
+        table{border-collapse:collapse;width:100%}
+        th{position:sticky;top:0;background:#f8fafc;z-index:10;cursor:pointer;user-select:none}
+        th:hover{background:#e0f2fe}
+        td,th{padding:6px 10px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:13px}
+        tr:hover td{background:#f0f9ff}
+        .k1{background:linear-gradient(90deg,#fef3c7 0%,transparent 100%)}
+        .k2{background:linear-gradient(90deg,#e5e7eb 0%,transparent 100%)}
+        .k3{background:linear-gradient(90deg,#fed7aa 0%,transparent 100%)}
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Header -->
-    <header class="bg-white border-b shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-scorito-800">Scorito Klassiekers 2026</h1>
-                    <p class="text-sm text-gray-500">Team optimizer & kopmanstrategie</p>
-                </div>
-                <div id="stats" class="text-sm text-gray-500"></div>
+<header class="bg-white border-b shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-scorito-800">Scorito Klassiekers 2026</h1>
+                <p class="text-sm text-gray-500">Team optimizer & kopmanstrategie</p>
             </div>
-            <!-- Tabs -->
-            <nav class="flex gap-6 mt-4 -mb-px">
-                <button onclick="showTab('riders')" id="tab-riders" class="pb-2 px-1 tab-active">Rennersoverzicht</button>
-                <button onclick="showTab('team')" id="tab-team" class="pb-2 px-1 text-gray-500 hover:text-gray-700">Optimaal Team</button>
-                <button onclick="showTab('kopman')" id="tab-kopman" class="pb-2 px-1 text-gray-500 hover:text-gray-700">Kopmanstrategie</button>
-                <button onclick="showTab('builder')" id="tab-builder" class="pb-2 px-1 text-gray-500 hover:text-gray-700">Team Builder</button>
-            </nav>
+            <div id="stats" class="text-sm text-gray-500"><div class="loader"></div> Laden...</div>
         </div>
-    </header>
+        <nav class="flex gap-6 mt-4 -mb-px text-sm">
+            <button onclick="showTab('riders')" id="tab-riders" class="pb-2 px-1 tab-active">Rennersoverzicht</button>
+            <button onclick="showTab('team')" id="tab-team" class="pb-2 px-1 text-gray-500 hover:text-gray-700">Optimaal Team</button>
+            <button onclick="showTab('kopman')" id="tab-kopman" class="pb-2 px-1 text-gray-500 hover:text-gray-700">Kopmanstrategie</button>
+            <button onclick="showTab('builder')" id="tab-builder" class="pb-2 px-1 text-gray-500 hover:text-gray-700">Team Builder</button>
+        </nav>
+    </div>
+</header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
-        <!-- Riders Tab -->
-        <div id="page-riders">
-            <div class="bg-white rounded-lg shadow p-4 mb-4">
-                <div class="grid grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Zoeken</label>
-                        <input type="text" id="search" placeholder="Naam of team..." class="w-full border rounded-lg px-3 py-2 text-sm" oninput="filterRiders()">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                        <select id="typeFilter" class="w-full border rounded-lg px-3 py-2 text-sm" onchange="filterRiders()">
-                            <option value="">Alle types</option>
-                            <option value="Cobbles">Cobbles</option>
-                            <option value="Hills">Hills</option>
-                            <option value="Sprinter">Sprinter</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Min. koersen</label>
-                        <input type="number" id="minRaces" value="0" min="0" max="17" class="w-full border rounded-lg px-3 py-2 text-sm" oninput="filterRiders()">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Min. prijs (M)</label>
-                        <input type="number" id="minPrice" value="0" min="0" max="7" step="0.25" class="w-full border rounded-lg px-3 py-2 text-sm" oninput="filterRiders()">
-                    </div>
-                </div>
+<main class="max-w-7xl mx-auto px-4 py-6">
+    <!-- RIDERS -->
+    <div id="page-riders">
+        <div class="bg-white rounded-lg shadow p-4 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div><label class="block text-xs font-medium text-gray-600 mb-1">Zoeken</label><input type="text" id="search" placeholder="Naam of team..." class="w-full border rounded-lg px-3 py-1.5 text-sm" oninput="renderRiders()"></div>
+                <div><label class="block text-xs font-medium text-gray-600 mb-1">Type</label><select id="typeFilter" class="w-full border rounded-lg px-3 py-1.5 text-sm" onchange="renderRiders()"><option value="">Alle</option><option value="Cobbles">Cobbles</option><option value="Hills">Hills</option><option value="Sprinter">Sprinter</option><option value="Other">Other</option></select></div>
+                <div><label class="block text-xs font-medium text-gray-600 mb-1">Min. koersen</label><input type="number" id="minRaces" value="1" min="0" max="17" class="w-full border rounded-lg px-3 py-1.5 text-sm" oninput="renderRiders()"></div>
+                <div><label class="block text-xs font-medium text-gray-600 mb-1">Min. prijs (M)</label><input type="number" id="minPrice" value="0" min="0" max="7" step="0.25" class="w-full border rounded-lg px-3 py-1.5 text-sm" oninput="renderRiders()"></div>
+                <div><label class="block text-xs font-medium text-gray-600 mb-1">Sorteer</label><select id="sortSelect" class="w-full border rounded-lg px-3 py-1.5 text-sm" onchange="sortField=this.value;sortAsc=false;renderRiders()"><option value="expTotal">Verwachte punten</option><option value="value">Waarde (pts/M)</option><option value="priceM">Prijs</option><option value="numRaces">Koersen</option></select></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow overflow-hidden"><div class="overflow-auto" style="max-height:72vh">
+            <table><thead><tr class="text-xs text-gray-500 uppercase">
+                <th onclick="toggleSort('name')">Naam</th><th onclick="toggleSort('team')">Team</th><th onclick="toggleSort('priceM')">Prijs</th><th onclick="toggleSort('type')">Type</th><th onclick="toggleSort('numRaces')">Koersen</th>
+                <th onclick="toggleSort('q.sprint')" class="text-center">Spr</th><th onclick="toggleSort('q.punch')" class="text-center">Pun</th><th onclick="toggleSort('q.hill')" class="text-center">Hil</th><th onclick="toggleSort('q.cobbles')" class="text-center">Cob</th>
+                <th onclick="toggleSort('expTotal')">Exp.</th><th onclick="toggleSort('value')">Waarde</th><th class="text-center">+/-</th>
+            </tr></thead><tbody id="ridersBody"></tbody></table>
+        </div></div>
+    </div>
+
+    <!-- OPTIMAL TEAM -->
+    <div id="page-team" class="hidden">
+        <div class="bg-white rounded-lg shadow p-6 mb-4">
+            <button onclick="runOptimizer()" class="bg-scorito-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-scorito-700 transition">Optimaliseer Team</button>
+            <span id="optLoader" class="hidden ml-3"><div class="loader"></div></span>
+        </div>
+        <div id="teamResult" class="hidden">
+            <div class="grid grid-cols-4 gap-4 mb-4" id="teamMetrics"></div>
+            <div class="bg-white rounded-lg shadow overflow-hidden"><table>
+                <thead><tr class="text-xs text-gray-500 uppercase"><th>#</th><th>Naam</th><th>Team</th><th>Prijs</th><th>Type</th><th>Koersen</th><th class="text-center">Spr</th><th class="text-center">Pun</th><th class="text-center">Hil</th><th class="text-center">Cob</th><th>Exp.</th><th>Waarde</th></tr></thead>
+                <tbody id="teamBody"></tbody>
+            </table></div>
+        </div>
+    </div>
+
+    <!-- KOPMAN -->
+    <div id="page-kopman" class="hidden"><div id="kopmanContent"><p class="text-gray-500 bg-white rounded-lg shadow p-6">Genereer eerst een team op "Optimaal Team".</p></div></div>
+
+    <!-- BUILDER -->
+    <div id="page-builder" class="hidden">
+        <div class="grid grid-cols-4 gap-4 mb-4">
+            <div class="bg-white rounded-lg shadow p-4"><div class="text-xs text-gray-500">Renners</div><div id="bCount" class="text-xl font-bold">0/20</div></div>
+            <div class="bg-white rounded-lg shadow p-4"><div class="text-xs text-gray-500">Budget</div><div id="bBudget" class="text-xl font-bold">-</div></div>
+            <div class="bg-white rounded-lg shadow p-4"><div class="text-xs text-gray-500">Resterend</div><div id="bLeft" class="text-xl font-bold">-</div></div>
+            <div class="bg-white rounded-lg shadow p-4"><div class="text-xs text-gray-500">Exp. punten</div><div id="bPts" class="text-xl font-bold">0</div></div>
+        </div>
+        <div class="flex gap-2 mb-4">
+            <button onclick="loadOptimalToBuilder()" class="bg-scorito-100 text-scorito-700 px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-scorito-200">Laad optimaal team</button>
+            <button onclick="builderIds.clear();renderBuilder();renderRiders()" class="bg-gray-100 text-gray-600 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-200">Wis team</button>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-3 border-b font-medium text-sm">Jouw team</div>
+                <div class="overflow-auto" style="max-height:58vh"><table><thead><tr class="text-xs text-gray-500 uppercase"><th>Naam</th><th>Team</th><th>Prijs</th><th>Koersen</th><th>Exp.</th><th></th></tr></thead><tbody id="bTeamBody"></tbody></table></div>
             </div>
             <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="overflow-auto" style="max-height: 70vh">
-                    <table id="ridersTable">
-                        <thead>
-                            <tr class="text-xs text-gray-500 uppercase">
-                                <th onclick="sortRiders('name')">Naam</th>
-                                <th onclick="sortRiders('team')">Team</th>
-                                <th onclick="sortRiders('priceM')">Prijs</th>
-                                <th onclick="sortRiders('type')">Type</th>
-                                <th onclick="sortRiders('numRaces')">Koersen</th>
-                                <th onclick="sortRiders('qualities.sprint')">Spr</th>
-                                <th onclick="sortRiders('qualities.punch')">Pun</th>
-                                <th onclick="sortRiders('qualities.hill')">Hil</th>
-                                <th onclick="sortRiders('qualities.cobbles')">Cob</th>
-                                <th onclick="sortRiders('expTotal')">Exp. Pts</th>
-                                <th onclick="sortRiders('valueScore')">Waarde</th>
-                                <th>Actie</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ridersBody"></tbody>
-                    </table>
-                </div>
+                <div class="p-3 border-b font-medium text-sm flex justify-between"><span>Beschikbaar</span><input type="text" id="bSearch" placeholder="Zoek..." class="border rounded px-2 py-1 text-xs" oninput="renderBuilderAvail()"></div>
+                <div class="overflow-auto" style="max-height:58vh"><table><thead><tr class="text-xs text-gray-500 uppercase"><th>Naam</th><th>Prijs</th><th>Type</th><th>Koersen</th><th>Exp.</th><th></th></tr></thead><tbody id="bAvailBody"></tbody></table></div>
             </div>
         </div>
+    </div>
+</main>
 
-        <!-- Optimal Team Tab -->
-        <div id="page-team" class="hidden">
-            <div class="bg-white rounded-lg shadow p-6 mb-4">
-                <div class="flex items-center gap-4 mb-4">
-                    <button onclick="runOptimizer()" class="bg-scorito-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-scorito-700 transition">
-                        Optimaliseer Team
-                    </button>
-                    <div id="optimizeLoader" class="hidden"><div class="loader"></div> <span class="text-sm text-gray-500">Berekenen...</span></div>
-                </div>
-                <div id="teamSummary" class="hidden">
-                    <div class="grid grid-cols-4 gap-4">
-                        <div class="bg-scorito-50 rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Budget</div>
-                            <div id="summBudget" class="text-xl font-bold text-scorito-800"></div>
-                        </div>
-                        <div class="bg-scorito-50 rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Exp. punten (basis)</div>
-                            <div id="summBase" class="text-xl font-bold text-scorito-800"></div>
-                        </div>
-                        <div class="bg-green-50 rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Exp. punten (met kopman)</div>
-                            <div id="summKopman" class="text-xl font-bold text-green-700"></div>
-                        </div>
-                        <div class="bg-orange-50 rounded-lg p-4">
-                            <div class="text-sm text-gray-500">Gem. koersen/renner</div>
-                            <div id="summRaces" class="text-xl font-bold text-orange-700"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="teamTable" class="bg-white rounded-lg shadow overflow-hidden hidden">
-                <table>
-                    <thead>
-                        <tr class="text-xs text-gray-500 uppercase">
-                            <th>#</th><th>Naam</th><th>Team</th><th>Prijs</th><th>Type</th>
-                            <th>Koersen</th><th>Spr</th><th>Pun</th><th>Hil</th><th>Cob</th>
-                            <th>Exp. Pts</th><th>Waarde</th>
-                        </tr>
-                    </thead>
-                    <tbody id="teamBody"></tbody>
-                </table>
-            </div>
-        </div>
+<script>
+// ── State ──
+let D = null; // all data
+let sortField = 'expTotal', sortAsc = false;
+let optTeam = null, optStrategy = null;
+let builderIds = new Set();
+const BUDGET = 50000000;
 
-        <!-- Kopman Tab -->
-        <div id="page-kopman" class="hidden">
-            <div id="kopmanContent">
-                <p class="text-gray-500">Genereer eerst een team op de "Optimaal Team" pagina.</p>
-            </div>
-        </div>
+// ── Init ──
+async function init() {
+    const r = await fetch('/data.json');
+    D = await r.json();
+    document.getElementById('stats').textContent = `${D.totalRiders} renners | ${Object.keys(D.raceNames).length} koersen | Budget €${BUDGET/1e6}M`;
+    renderRiders();
+}
 
-        <!-- Builder Tab -->
-        <div id="page-builder" class="hidden">
-            <div class="grid grid-cols-3 gap-4 mb-4">
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="text-sm text-gray-500">Renners</div>
-                    <div id="builderCount" class="text-2xl font-bold">0/20</div>
-                </div>
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="text-sm text-gray-500">Budget gebruikt</div>
-                    <div id="builderBudget" class="text-2xl font-bold">€0.00M</div>
-                </div>
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="text-sm text-gray-500">Verwachte punten</div>
-                    <div id="builderPoints" class="text-2xl font-bold">0</div>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="p-3 border-b font-medium">Jouw team</div>
-                    <div class="overflow-auto" style="max-height: 60vh">
-                        <table>
-                            <thead><tr class="text-xs text-gray-500 uppercase"><th>Naam</th><th>Prijs</th><th>Koersen</th><th>Exp.</th><th></th></tr></thead>
-                            <tbody id="builderTeamBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="p-3 border-b font-medium flex justify-between items-center">
-                        <span>Beschikbare renners</span>
-                        <input type="text" id="builderSearch" placeholder="Zoeken..." class="border rounded px-2 py-1 text-sm" oninput="renderBuilderAvailable()">
-                    </div>
-                    <div class="overflow-auto" style="max-height: 60vh">
-                        <table>
-                            <thead><tr class="text-xs text-gray-500 uppercase"><th>Naam</th><th>Prijs</th><th>Koersen</th><th>Exp.</th><th></th></tr></thead>
-                            <tbody id="builderAvailBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+// ── Tabs ──
+function showTab(n) {
+    ['riders','team','kopman','builder'].forEach(t => {
+        document.getElementById('page-'+t).classList.toggle('hidden', t!==n);
+        const tb = document.getElementById('tab-'+t);
+        tb.classList.toggle('tab-active', t===n);
+        tb.classList.toggle('text-gray-500', t!==n);
+    });
+    if (n==='builder') renderBuilder();
+}
 
-    <script>
-    // ── State ──
-    let allRiders = [];
-    let raceNames = {};
-    let raceQualities = {};
-    let sortField = 'expTotal';
-    let sortAsc = false;
-    let optimizedTeam = null;
-    let optimizedStrategy = null;
-    let optimizedSummary = null;
-    let builderTeamIds = new Set();
-    const BUDGET = 50000000;
+// ── Helpers ──
+function qb(v) {
+    if (!v) return '<span class="text-gray-300">-</span>';
+    const c = {2:'bg-gray-200 text-gray-600',4:'bg-blue-100 text-blue-700',6:'bg-green-100 text-green-700',8:'bg-orange-100 text-orange-700',10:'bg-red-100 text-red-700'}[v]||'bg-gray-100';
+    return `<span class="inline-block px-1.5 py-0.5 rounded text-xs font-medium ${c}">${v}</span>`;
+}
+function tc(t) {
+    return {Cobbles:'bg-amber-100 text-amber-800',Hills:'bg-green-100 text-green-800',Sprinter:'bg-purple-100 text-purple-800',Other:'bg-gray-100 text-gray-600'}[t]||'bg-gray-100 text-gray-600';
+}
+function getVal(obj, path) { return path.split('.').reduce((o,k)=>o?.[k], obj) ?? 0; }
 
-    // ── Init ──
-    async function init() {
-        document.getElementById('stats').innerHTML = '<div class="loader"></div> Data laden...';
-        try {
-            const resp = await fetch('/api/riders');
-            const data = await resp.json();
-            allRiders = data.riders;
-            raceNames = data.raceNames;
-            raceQualities = data.raceQualities;
-            document.getElementById('stats').textContent = `${data.totalRiders} renners | 17 koersen | Budget €50M`;
-            filterRiders();
-        } catch (e) {
-            document.getElementById('stats').textContent = 'Fout bij laden: ' + e.message;
-        }
-    }
+// ── Sort ──
+function toggleSort(f) { if(sortField===f) sortAsc=!sortAsc; else { sortField=f; sortAsc=false; } renderRiders(); }
 
-    // ── Tabs ──
-    function showTab(name) {
-        ['riders', 'team', 'kopman', 'builder'].forEach(t => {
-            document.getElementById(`page-${t}`).classList.toggle('hidden', t !== name);
-            document.getElementById(`tab-${t}`).classList.toggle('tab-active', t === name);
-            if (t !== name) document.getElementById(`tab-${t}`).classList.add('text-gray-500');
-            else document.getElementById(`tab-${t}`).classList.remove('text-gray-500');
-        });
-        if (name === 'builder') renderBuilder();
-    }
+// ── Riders ──
+function renderRiders() {
+    if (!D) return;
+    const s = (document.getElementById('search')?.value||'').toLowerCase();
+    const tp = document.getElementById('typeFilter')?.value||'';
+    const mr = parseInt(document.getElementById('minRaces')?.value)||0;
+    const mp = parseFloat(document.getElementById('minPrice')?.value)||0;
 
-    // ── Quality badge ──
-    function qBadge(val) {
-        if (!val) return '<span class="text-gray-300">-</span>';
-        const colors = { 2: 'bg-gray-200 text-gray-600', 4: 'bg-blue-100 text-blue-700', 6: 'bg-green-100 text-green-700', 8: 'bg-orange-100 text-orange-700', 10: 'bg-red-100 text-red-700' };
-        const c = colors[val] || 'bg-gray-100 text-gray-600';
-        return `<span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${c}">${val}</span>`;
-    }
+    let list = D.riders.filter(r =>
+        (r.name.toLowerCase().includes(s) || r.team.toLowerCase().includes(s)) &&
+        (!tp || r.type===tp) && r.numRaces>=mr && r.priceM>=mp
+    );
+    list.sort((a,b) => {
+        let va=getVal(a,sortField), vb=getVal(b,sortField);
+        if (typeof va==='string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        return sortAsc ? va-vb : vb-va;
+    });
 
-    // ── Riders table ──
-    function filterRiders() {
-        const search = document.getElementById('search').value.toLowerCase();
-        const type = document.getElementById('typeFilter').value;
-        const minRaces = parseInt(document.getElementById('minRaces').value) || 0;
-        const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+    document.getElementById('ridersBody').innerHTML = list.slice(0,300).map(r => `<tr>
+        <td class="font-medium">${r.name}</td>
+        <td class="text-gray-500 text-xs max-w-[140px] truncate">${r.team}</td>
+        <td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td>
+        <td><span class="inline-block px-1.5 py-0.5 rounded-full text-xs font-medium ${tc(r.type)}">${r.type}</span></td>
+        <td class="text-center">${r.numRaces}</td>
+        <td class="text-center">${qb(r.q.sprint)}</td>
+        <td class="text-center">${qb(r.q.punch)}</td>
+        <td class="text-center">${qb(r.q.hill)}</td>
+        <td class="text-center">${qb(r.q.cobbles)}</td>
+        <td class="font-mono font-medium">${r.expTotal.toFixed(1)}</td>
+        <td class="font-mono text-xs">${r.value.toFixed(1)}</td>
+        <td class="text-center"><button onclick="toggleB(${r.id})" class="text-xs px-2 py-0.5 rounded ${builderIds.has(r.id)?'bg-red-100 text-red-700':'bg-scorito-100 text-scorito-700'}">${builderIds.has(r.id)?'−':'+'}</button></td>
+    </tr>`).join('');
+}
 
-        let filtered = allRiders.filter(r =>
-            (r.name.toLowerCase().includes(search) || r.team.toLowerCase().includes(search)) &&
-            (!type || r.type === type) &&
-            r.numRaces >= minRaces &&
-            r.priceM >= minPrice
-        );
+// ── Optimizer (client-side greedy) ──
+function runOptimizer() {
+    document.getElementById('optLoader').classList.remove('hidden');
+    setTimeout(() => {
+        const candidates = D.riders.filter(r => r.numRaces > 0).sort((a,b) => b.value - a.value);
+        // Greedy: pick by value score, respecting budget
+        let team = [], budget = BUDGET, picked = new Set();
 
-        // Sort
-        filtered.sort((a, b) => {
-            let va = sortField.includes('.') ? sortField.split('.').reduce((o, k) => o[k], a) : a[sortField];
-            let vb = sortField.includes('.') ? sortField.split('.').reduce((o, k) => o[k], b) : b[sortField];
-            if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-            return sortAsc ? va - vb : vb - va;
-        });
-
-        const body = document.getElementById('ridersBody');
-        body.innerHTML = filtered.slice(0, 200).map(r => `
-            <tr>
-                <td class="font-medium">${r.name}</td>
-                <td class="text-gray-600 text-xs">${r.team}</td>
-                <td class="font-mono">€${r.priceM.toFixed(2)}M</td>
-                <td><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${typeColor(r.type)}">${r.type}</span></td>
-                <td class="text-center">${r.numRaces}</td>
-                <td class="text-center">${qBadge(r.qualities.sprint)}</td>
-                <td class="text-center">${qBadge(r.qualities.punch)}</td>
-                <td class="text-center">${qBadge(r.qualities.hill)}</td>
-                <td class="text-center">${qBadge(r.qualities.cobbles)}</td>
-                <td class="font-mono font-medium">${r.expTotal.toFixed(1)}</td>
-                <td class="font-mono">${r.valueScore.toFixed(1)}</td>
-                <td><button onclick="toggleBuilder(${r.id})" class="text-xs px-2 py-1 rounded ${builderTeamIds.has(r.id) ? 'bg-red-100 text-red-700' : 'bg-scorito-100 text-scorito-700'}">${builderTeamIds.has(r.id) ? '−' : '+'}</button></td>
-            </tr>
-        `).join('');
-    }
-
-    function typeColor(type) {
-        const m = { Cobbles: 'bg-amber-100 text-amber-800', Hills: 'bg-green-100 text-green-800', Sprinter: 'bg-purple-100 text-purple-800', Other: 'bg-gray-100 text-gray-600' };
-        return m[type] || m.Other;
-    }
-
-    function sortRiders(field) {
-        if (sortField === field) sortAsc = !sortAsc;
-        else { sortField = field; sortAsc = false; }
-        filterRiders();
-    }
-
-    // ── Optimizer ──
-    async function runOptimizer() {
-        document.getElementById('optimizeLoader').classList.remove('hidden');
-        try {
-            const resp = await fetch('/api/optimize');
-            const data = await resp.json();
-            optimizedTeam = data.team;
-            optimizedStrategy = data.strategy;
-            optimizedSummary = data.summary;
-            renderTeam();
-            renderKopman();
-        } catch (e) {
-            alert('Optimalisatie mislukt: ' + e.message);
-        }
-        document.getElementById('optimizeLoader').classList.add('hidden');
-    }
-
-    function renderTeam() {
-        if (!optimizedTeam) return;
-        const s = optimizedSummary;
-
-        document.getElementById('teamSummary').classList.remove('hidden');
-        document.getElementById('teamTable').classList.remove('hidden');
-        document.getElementById('summBudget').textContent = `€${s.totalCostM}M / €50M`;
-        document.getElementById('summBase').textContent = Math.round(s.expPointsBase);
-        document.getElementById('summKopman').textContent = `${Math.round(s.expPointsWithKopman)} (+${Math.round(s.kopmanBonus)})`;
-        document.getElementById('summRaces').textContent = s.avgRacesPerRider;
-
-        document.getElementById('teamBody').innerHTML = optimizedTeam.map((r, i) => `
-            <tr>
-                <td class="text-gray-400">${i + 1}</td>
-                <td class="font-medium">${r.name}</td>
-                <td class="text-gray-600 text-xs">${r.team}</td>
-                <td class="font-mono">€${r.priceM.toFixed(2)}M</td>
-                <td><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${typeColor(r.type)}">${r.type}</span></td>
-                <td class="text-center">${r.numRaces}</td>
-                <td class="text-center">${qBadge(r.qualities.sprint)}</td>
-                <td class="text-center">${qBadge(r.qualities.punch)}</td>
-                <td class="text-center">${qBadge(r.qualities.hill)}</td>
-                <td class="text-center">${qBadge(r.qualities.cobbles)}</td>
-                <td class="font-mono font-medium">${r.expTotal.toFixed(1)}</td>
-                <td class="font-mono">${r.valueScore.toFixed(1)}</td>
-            </tr>
-        `).join('');
-    }
-
-    // ── Kopman ──
-    function renderKopman() {
-        if (!optimizedStrategy) {
-            document.getElementById('kopmanContent').innerHTML = '<p class="text-gray-500">Genereer eerst een team.</p>';
-            return;
-        }
-
-        const races = Object.entries(optimizedStrategy).filter(([_, v]) => v.riders.length > 0);
-        let html = `
-            <p class="text-sm text-gray-600 mb-4">Per koers worden de 3 beste renners als kopman aangewezen: <strong>1e kopman (3x)</strong>, <strong>2e kopman (2.5x)</strong>, <strong>3e kopman (2x)</strong>.</p>
-            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-                <table>
-                    <thead><tr class="text-xs text-gray-500 uppercase"><th>Koers</th><th>1e Kopman (3x)</th><th>2e Kopman (2.5x)</th><th>3e Kopman (2x)</th><th>Exp. totaal</th></tr></thead>
-                    <tbody>
-        `;
-
-        let grandTotal = 0;
-        for (const [race, data] of races) {
-            const r = data.riders;
-            const total = r.reduce((s, x) => s + x.boostedPoints, 0);
-            grandTotal += total;
-            const k = (i) => r[i] ? `<strong>${r[i].name}</strong> <span class="text-gray-500">(${r[i].basePoints} × ${r[i].multiplier}x = ${r[i].boostedPoints.toFixed(1)})</span>` : '-';
-            html += `<tr><td class="font-medium">${data.displayName}</td><td class="kopman-1">${k(0)}</td><td class="kopman-2">${k(1)}</td><td class="kopman-3">${k(2)}</td><td class="font-mono font-medium">${total.toFixed(1)}</td></tr>`;
-        }
-
-        html += `</tbody><tfoot><tr class="font-bold bg-gray-50"><td colspan="4">Totaal verwachte punten</td><td class="font-mono">${grandTotal.toFixed(0)}</td></tr></tfoot></table></div>`;
-
-        // Per-race detail cards
-        html += '<div class="grid grid-cols-2 gap-4">';
-        for (const [race, data] of races) {
-            const q = raceQualities[race] || {};
-            html += `
-                <div class="bg-white rounded-lg shadow p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-bold">${data.displayName}</h3>
-                        <span class="text-xs text-gray-500">${q.primary ? q.primary.charAt(0).toUpperCase() + q.primary.slice(1) : ''} ${q.secondary ? '/ ' + q.secondary.charAt(0).toUpperCase() + q.secondary.slice(1) : ''}</span>
-                    </div>
-            `;
-            for (const r of data.riders.slice(0, 6)) {
-                const isKop = r.rank <= 3;
-                const badge = isKop ? [`<span class="text-yellow-500">&#x1F947;</span>`, `<span class="text-gray-400">&#x1F948;</span>`, `<span class="text-orange-400">&#x1F949;</span>`][r.rank-1] : '';
-                html += `<div class="flex justify-between text-sm py-1 ${isKop ? 'font-medium' : 'text-gray-500'}">
-                    <span>${badge} ${r.name}</span>
-                    <span class="font-mono">${r.basePoints.toFixed(1)} ${isKop ? '× ' + r.multiplier + 'x = <strong>' + r.boostedPoints.toFixed(1) + '</strong>' : ''}</span>
-                </div>`;
+        // First: force top expected-points riders that are worth it
+        const byExp = [...candidates].sort((a,b) => b.expTotal - a.expTotal);
+        for (const r of byExp.slice(0, 8)) {
+            if (budget >= r.price && team.length < 20) {
+                team.push(r); budget -= r.price; picked.add(r.id);
             }
-            html += '</div>';
+        }
+
+        // Fill remaining by value score
+        for (const r of candidates) {
+            if (team.length >= 20) break;
+            if (picked.has(r.id)) continue;
+            if (budget >= r.price) {
+                team.push(r); budget -= r.price; picked.add(r.id);
+            }
+        }
+
+        team.sort((a,b) => b.expTotal - a.expTotal);
+        optTeam = team;
+
+        // Kopman strategy
+        optStrategy = {};
+        for (const [race, displayName] of Object.entries(D.raceNames)) {
+            const racing = team.filter(r => r.races[race]).sort((a,b) => (b.exp[race]||0) - (a.exp[race]||0));
+            const mults = [3.0, 2.5, 2.0];
+            optStrategy[race] = {
+                displayName,
+                riders: racing.map((r, i) => ({
+                    rank: i+1, name: r.name, id: r.id,
+                    mult: i < 3 ? mults[i] : 1.0,
+                    base: r.exp[race]||0,
+                    boosted: (r.exp[race]||0) * (i < 3 ? mults[i] : 1.0),
+                }))
+            };
+        }
+
+        renderTeam();
+        renderKopman();
+        document.getElementById('optLoader').classList.add('hidden');
+    }, 50);
+}
+
+function renderTeam() {
+    if (!optTeam) return;
+    const cost = optTeam.reduce((s,r) => s+r.price, 0);
+    const expBase = optTeam.reduce((s,r) => s+r.expTotal, 0);
+    let expKop = 0;
+    for (const d of Object.values(optStrategy)) {
+        for (const r of d.riders) expKop += r.boosted;
+    }
+    const avgR = (optTeam.reduce((s,r) => s+r.numRaces, 0) / optTeam.length).toFixed(1);
+
+    document.getElementById('teamResult').classList.remove('hidden');
+    document.getElementById('teamMetrics').innerHTML = `
+        <div class="bg-scorito-50 rounded-lg p-4"><div class="text-xs text-gray-500">Budget</div><div class="text-xl font-bold text-scorito-800">€${(cost/1e6).toFixed(1)}M / €50M</div><div class="text-xs text-gray-500">€${((BUDGET-cost)/1e6).toFixed(1)}M over</div></div>
+        <div class="bg-blue-50 rounded-lg p-4"><div class="text-xs text-gray-500">Exp. punten (basis)</div><div class="text-xl font-bold text-blue-800">${Math.round(expBase)}</div></div>
+        <div class="bg-green-50 rounded-lg p-4"><div class="text-xs text-gray-500">Exp. punten (met kopman)</div><div class="text-xl font-bold text-green-700">${Math.round(expKop)}</div><div class="text-xs text-green-600">+${Math.round(expKop-expBase)} bonus</div></div>
+        <div class="bg-orange-50 rounded-lg p-4"><div class="text-xs text-gray-500">Gem. koersen/renner</div><div class="text-xl font-bold text-orange-700">${avgR}</div></div>`;
+
+    document.getElementById('teamBody').innerHTML = optTeam.map((r,i) => `<tr>
+        <td class="text-gray-400">${i+1}</td><td class="font-medium">${r.name}</td><td class="text-gray-500 text-xs">${r.team}</td>
+        <td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td><td><span class="inline-block px-1.5 py-0.5 rounded-full text-xs font-medium ${tc(r.type)}">${r.type}</span></td>
+        <td class="text-center">${r.numRaces}</td>
+        <td class="text-center">${qb(r.q.sprint)}</td><td class="text-center">${qb(r.q.punch)}</td><td class="text-center">${qb(r.q.hill)}</td><td class="text-center">${qb(r.q.cobbles)}</td>
+        <td class="font-mono font-medium">${r.expTotal.toFixed(1)}</td><td class="font-mono text-xs">${r.value.toFixed(1)}</td>
+    </tr>`).join('');
+}
+
+// ── Kopman ──
+function renderKopman() {
+    if (!optStrategy) return;
+    const races = Object.entries(optStrategy).filter(([_,d]) => d.riders.length > 0);
+    let gt = 0;
+
+    let html = `<p class="text-sm text-gray-600 mb-4">Per koers: <b>1e kopman (3x)</b>, <b>2e kopman (2.5x)</b>, <b>3e kopman (2x)</b></p>
+    <div class="bg-white rounded-lg shadow overflow-hidden mb-6"><table>
+    <thead><tr class="text-xs text-gray-500 uppercase"><th>Koers</th><th>1e Kopman (3x)</th><th>2e Kopman (2.5x)</th><th>3e Kopman (2x)</th><th>Totaal</th></tr></thead><tbody>`;
+
+    for (const [race, data] of races) {
+        const tot = data.riders.reduce((s,r) => s+r.boosted, 0);
+        gt += tot;
+        const k = i => data.riders[i] ? `<b>${data.riders[i].name}</b> <span class="text-gray-400 text-xs">${data.riders[i].base}×${data.riders[i].mult}=${data.riders[i].boosted.toFixed(1)}</span>` : '-';
+        html += `<tr><td class="font-medium text-sm">${data.displayName}</td><td class="k1 text-sm">${k(0)}</td><td class="k2 text-sm">${k(1)}</td><td class="k3 text-sm">${k(2)}</td><td class="font-mono font-medium">${tot.toFixed(1)}</td></tr>`;
+    }
+    html += `</tbody><tfoot><tr class="font-bold bg-scorito-50"><td colspan="4">Totaal verwachte punten</td><td class="font-mono">${gt.toFixed(0)}</td></tr></tfoot></table></div>`;
+
+    // Detail cards
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    for (const [race, data] of races) {
+        const q = D.raceQualities[race] || {};
+        html += `<div class="bg-white rounded-lg shadow p-4"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm">${data.displayName}</h3><span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">${(q.primary||'').charAt(0).toUpperCase()+(q.primary||'').slice(1)}${q.secondary ? ' / '+(q.secondary||'').charAt(0).toUpperCase()+(q.secondary||'').slice(1) : ''}</span></div>`;
+        const medals = ['\u{1F947}','\u{1F948}','\u{1F949}'];
+        for (const r of data.riders.slice(0,6)) {
+            const isK = r.rank <= 3;
+            html += `<div class="flex justify-between text-sm py-0.5 ${isK?'font-medium':'text-gray-500'}"><span>${isK?medals[r.rank-1]:''} ${r.name}</span><span class="font-mono text-xs">${r.base.toFixed(1)}${isK?' × '+r.mult+'x = <b>'+r.boosted.toFixed(1)+'</b>':''}</span></div>`;
         }
         html += '</div>';
-
-        document.getElementById('kopmanContent').innerHTML = html;
     }
+    html += '</div>';
+    document.getElementById('kopmanContent').innerHTML = html;
+}
 
-    // ── Builder ──
-    function toggleBuilder(id) {
-        if (builderTeamIds.has(id)) builderTeamIds.delete(id);
-        else if (builderTeamIds.size < 20) builderTeamIds.add(id);
-        filterRiders();
-        renderBuilder();
-    }
+// ── Builder ──
+function toggleB(id) {
+    if (builderIds.has(id)) builderIds.delete(id);
+    else if (builderIds.size < 20) builderIds.add(id);
+    renderRiders(); renderBuilder();
+}
 
-    function renderBuilder() {
-        const team = allRiders.filter(r => builderTeamIds.has(r.id));
-        const totalCost = team.reduce((s, r) => s + r.price, 0);
-        const totalExp = team.reduce((s, r) => s + r.expTotal, 0);
-        const remaining = BUDGET - totalCost;
+function renderBuilder() {
+    if (!D) return;
+    const team = D.riders.filter(r => builderIds.has(r.id)).sort((a,b) => b.expTotal - a.expTotal);
+    const cost = team.reduce((s,r) => s+r.price, 0);
+    const left = BUDGET - cost;
+    const pts = team.reduce((s,r) => s+r.expTotal, 0);
 
-        document.getElementById('builderCount').textContent = `${team.length}/20`;
-        document.getElementById('builderBudget').textContent = `€${(totalCost/1e6).toFixed(2)}M / €50M`;
-        document.getElementById('builderBudget').className = `text-2xl font-bold ${remaining < 0 ? 'text-red-600' : ''}`;
-        document.getElementById('builderPoints').textContent = totalExp.toFixed(0);
+    document.getElementById('bCount').textContent = `${team.length}/20`;
+    document.getElementById('bBudget').textContent = `€${(cost/1e6).toFixed(2)}M`;
+    document.getElementById('bLeft').textContent = `€${(left/1e6).toFixed(2)}M`;
+    document.getElementById('bLeft').className = `text-xl font-bold ${left<0?'text-red-600':'text-green-600'}`;
+    document.getElementById('bPts').textContent = pts.toFixed(0);
 
-        document.getElementById('builderTeamBody').innerHTML = team
-            .sort((a, b) => b.expTotal - a.expTotal)
-            .map(r => `
-                <tr>
-                    <td class="font-medium text-sm">${r.name}</td>
-                    <td class="font-mono text-sm">€${r.priceM.toFixed(2)}M</td>
-                    <td class="text-center text-sm">${r.numRaces}</td>
-                    <td class="font-mono text-sm">${r.expTotal.toFixed(1)}</td>
-                    <td><button onclick="toggleBuilder(${r.id})" class="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">&#x2212;</button></td>
-                </tr>
-            `).join('') || '<tr><td colspan="5" class="text-gray-400 text-center py-8">Voeg renners toe via het + knopje</td></tr>';
+    document.getElementById('bTeamBody').innerHTML = team.map(r => `<tr>
+        <td class="font-medium text-sm">${r.name}</td><td class="text-gray-500 text-xs">${r.team}</td>
+        <td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td><td class="text-center">${r.numRaces}</td><td class="font-mono text-sm">${r.expTotal.toFixed(1)}</td>
+        <td><button onclick="toggleB(${r.id})" class="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">&minus;</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="text-gray-400 text-center py-8">Voeg renners toe via + knopje</td></tr>';
 
-        renderBuilderAvailable();
-    }
+    renderBuilderAvail();
+}
 
-    function renderBuilderAvailable() {
-        const search = (document.getElementById('builderSearch')?.value || '').toLowerCase();
-        const avail = allRiders
-            .filter(r => !builderTeamIds.has(r.id) && r.numRaces > 0 && (r.name.toLowerCase().includes(search) || r.team.toLowerCase().includes(search)))
-            .sort((a, b) => b.expTotal - a.expTotal)
-            .slice(0, 100);
+function renderBuilderAvail() {
+    const s = (document.getElementById('bSearch')?.value||'').toLowerCase();
+    const avail = D.riders.filter(r => !builderIds.has(r.id) && r.numRaces>0 && (r.name.toLowerCase().includes(s)||r.team.toLowerCase().includes(s)))
+        .sort((a,b) => b.value - a.value).slice(0, 100);
+    document.getElementById('bAvailBody').innerHTML = avail.map(r => `<tr>
+        <td class="text-sm">${r.name}</td><td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td>
+        <td><span class="inline-block px-1 py-0.5 rounded text-xs ${tc(r.type)}">${r.type}</span></td>
+        <td class="text-center">${r.numRaces}</td><td class="font-mono text-sm">${r.expTotal.toFixed(1)}</td>
+        <td><button onclick="toggleB(${r.id})" class="text-xs px-2 py-0.5 rounded bg-scorito-100 text-scorito-700" ${builderIds.size>=20?'disabled':''}>&plus;</button></td>
+    </tr>`).join('');
+}
 
-        document.getElementById('builderAvailBody').innerHTML = avail.map(r => `
-            <tr>
-                <td class="text-sm">${r.name} <span class="text-gray-400 text-xs">${r.team}</span></td>
-                <td class="font-mono text-sm">€${r.priceM.toFixed(2)}M</td>
-                <td class="text-center text-sm">${r.numRaces}</td>
-                <td class="font-mono text-sm">${r.expTotal.toFixed(1)}</td>
-                <td><button onclick="toggleBuilder(${r.id})" class="text-xs px-2 py-0.5 rounded bg-scorito-100 text-scorito-700" ${builderTeamIds.size >= 20 ? 'disabled' : ''}>+</button></td>
-            </tr>
-        `).join('');
-    }
+function loadOptimalToBuilder() {
+    if (!optTeam) { alert('Genereer eerst een optimaal team'); return; }
+    builderIds = new Set(optTeam.map(r => r.id));
+    renderBuilder(); renderRiders();
+}
 
-    // ── Start ──
-    init();
-    </script>
+init();
+</script>
 </body>
 </html>
