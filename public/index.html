@@ -60,7 +60,7 @@
             <table><thead><tr class="text-xs text-gray-500 uppercase">
                 <th onclick="toggleSort('name')">Naam</th><th onclick="toggleSort('team')">Team</th><th onclick="toggleSort('priceM')">Prijs</th><th onclick="toggleSort('type')">Type</th><th onclick="toggleSort('numRaces')">Koersen</th>
                 <th onclick="toggleSort('q.sprint')" class="text-center">Spr</th><th onclick="toggleSort('q.punch')" class="text-center">Pun</th><th onclick="toggleSort('q.hill')" class="text-center">Hil</th><th onclick="toggleSort('q.cobbles')" class="text-center">Cob</th>
-                <th onclick="toggleSort('expTotal')">Exp.</th><th onclick="toggleSort('value')">Waarde</th><th class="text-center">+/-</th>
+                <th onclick="toggleSort('expTotal')">Exp.</th><th onclick="toggleSort('adjExpTotal')">Adj.</th><th onclick="toggleSort('adjValue')">Waarde</th><th class="text-center">+/-</th>
             </tr></thead><tbody id="ridersBody"></tbody></table>
         </div></div>
     </div>
@@ -136,7 +136,7 @@
 <script>
 // ── State ──
 let D = null; // all data
-let sortField = 'expTotal', sortAsc = false;
+let sortField = 'adjExpTotal', sortAsc = false;
 let optTeam = null, optStrategy = null;
 let builderIds = new Set();
 let newsData = null; // { articles, riderAlerts, feedStatus }
@@ -146,8 +146,49 @@ const BUDGET = 50000000;
 async function init() {
     const r = await fetch('/data.json');
     D = await r.json();
+    // Initialize adjusted values = base values
+    for (const r of D.riders) {
+        r.adjExp = { ...r.exp };
+        r.adjExpTotal = r.expTotal;
+        r.adjValue = r.value;
+        r.missedRaces = [];
+        r.severity = null;
+    }
     document.getElementById('stats').textContent = `${D.totalRiders} renners | ${Object.keys(D.raceNames).length} koersen | Budget €${BUDGET/1e6}M`;
     renderRiders();
+    // Auto-fetch news on load
+    fetchNews();
+}
+
+// ── Adjust points based on injuries ──
+function applyInjuryAdjustments() {
+    if (!newsData || !D) return;
+    for (const r of D.riders) {
+        // Reset to base
+        r.adjExp = { ...r.exp };
+        r.adjExpTotal = r.expTotal;
+        r.adjValue = r.value;
+        r.missedRaces = [];
+        r.severity = null;
+
+        const alert = newsData.riderAlerts[r.id];
+        if (alert && alert.status === 'warning' && alert.missedRaces?.length > 0) {
+            r.severity = alert.severity;
+            r.missedRaces = alert.missedRaces;
+            // Zero out points for missed races
+            let adjTotal = 0;
+            for (const [race, pts] of Object.entries(r.exp)) {
+                if (alert.missedRaces.includes(race)) {
+                    r.adjExp[race] = 0;
+                } else {
+                    r.adjExp[race] = pts;
+                }
+                adjTotal += r.adjExp[race];
+            }
+            r.adjExpTotal = adjTotal;
+            r.adjValue = r.priceM > 0 ? adjTotal / r.priceM : 0;
+        }
+    }
 }
 
 // ── Tabs ──
@@ -204,29 +245,31 @@ function renderRiders() {
         <td class="text-center">${qb(r.q.punch)}</td>
         <td class="text-center">${qb(r.q.hill)}</td>
         <td class="text-center">${qb(r.q.cobbles)}</td>
-        <td class="font-mono font-medium">${r.expTotal.toFixed(1)}</td>
-        <td class="font-mono text-xs">${r.value.toFixed(1)}</td>
+        <td class="font-mono text-xs text-gray-400">${r.expTotal.toFixed(1)}</td>
+        <td class="font-mono font-medium ${r.adjExpTotal < r.expTotal ? 'text-red-600' : ''}">${r.adjExpTotal.toFixed(1)}${r.missedRaces.length ? ' <span class="text-red-400 text-xs">-'+r.missedRaces.length+'</span>' : ''}</td>
+        <td class="font-mono text-xs">${r.adjValue.toFixed(1)}</td>
         <td class="text-center"><button onclick="toggleB(${r.id})" class="text-xs px-2 py-0.5 rounded ${builderIds.has(r.id)?'bg-red-100 text-red-700':'bg-scorito-100 text-scorito-700'}">${builderIds.has(r.id)?'−':'+'}</button></td>
     </tr>`).join('');
 }
 
-// ── Optimizer (client-side greedy) ──
+// ── Optimizer (client-side greedy, uses adjusted points) ──
 function runOptimizer() {
     document.getElementById('optLoader').classList.remove('hidden');
     setTimeout(() => {
-        const candidates = D.riders.filter(r => r.numRaces > 0).sort((a,b) => b.value - a.value);
-        // Greedy: pick by value score, respecting budget
+        // Use adjusted points (injury-aware)
+        const candidates = D.riders.filter(r => r.numRaces > 0 && r.adjExpTotal > 0)
+            .sort((a,b) => b.adjValue - a.adjValue);
         let team = [], budget = BUDGET, picked = new Set();
 
-        // First: force top expected-points riders that are worth it
-        const byExp = [...candidates].sort((a,b) => b.expTotal - a.expTotal);
+        // First: force top adjusted-points riders
+        const byExp = [...candidates].sort((a,b) => b.adjExpTotal - a.adjExpTotal);
         for (const r of byExp.slice(0, 8)) {
             if (budget >= r.price && team.length < 20) {
                 team.push(r); budget -= r.price; picked.add(r.id);
             }
         }
 
-        // Fill remaining by value score
+        // Fill remaining by adjusted value score
         for (const r of candidates) {
             if (team.length >= 20) break;
             if (picked.has(r.id)) continue;
@@ -235,21 +278,24 @@ function runOptimizer() {
             }
         }
 
-        team.sort((a,b) => b.expTotal - a.expTotal);
+        team.sort((a,b) => b.adjExpTotal - a.adjExpTotal);
         optTeam = team;
 
-        // Kopman strategy
+        // Kopman strategy using adjusted per-race points
         optStrategy = {};
         for (const [race, displayName] of Object.entries(D.raceNames)) {
-            const racing = team.filter(r => r.races[race]).sort((a,b) => (b.exp[race]||0) - (a.exp[race]||0));
+            const racing = team.filter(r => r.races[race] && (r.adjExp[race]||0) > 0)
+                .sort((a,b) => (b.adjExp[race]||0) - (a.adjExp[race]||0));
             const mults = [3.0, 2.5, 2.0];
             optStrategy[race] = {
                 displayName,
                 riders: racing.map((r, i) => ({
                     rank: i+1, name: r.name, id: r.id,
                     mult: i < 3 ? mults[i] : 1.0,
-                    base: r.exp[race]||0,
-                    boosted: (r.exp[race]||0) * (i < 3 ? mults[i] : 1.0),
+                    base: r.adjExp[race]||0,
+                    origBase: r.exp[race]||0,
+                    boosted: (r.adjExp[race]||0) * (i < 3 ? mults[i] : 1.0),
+                    missed: r.missedRaces.includes(race),
                 }))
             };
         }
@@ -263,26 +309,30 @@ function runOptimizer() {
 function renderTeam() {
     if (!optTeam) return;
     const cost = optTeam.reduce((s,r) => s+r.price, 0);
-    const expBase = optTeam.reduce((s,r) => s+r.expTotal, 0);
+    const expAdj = optTeam.reduce((s,r) => s+r.adjExpTotal, 0);
     let expKop = 0;
     for (const d of Object.values(optStrategy)) {
         for (const r of d.riders) expKop += r.boosted;
     }
     const avgR = (optTeam.reduce((s,r) => s+r.numRaces, 0) / optTeam.length).toFixed(1);
+    const injured = optTeam.filter(r => r.missedRaces.length > 0).length;
 
     document.getElementById('teamResult').classList.remove('hidden');
     document.getElementById('teamMetrics').innerHTML = `
         <div class="bg-scorito-50 rounded-lg p-4"><div class="text-xs text-gray-500">Budget</div><div class="text-xl font-bold text-scorito-800">€${(cost/1e6).toFixed(1)}M / €50M</div><div class="text-xs text-gray-500">€${((BUDGET-cost)/1e6).toFixed(1)}M over</div></div>
-        <div class="bg-blue-50 rounded-lg p-4"><div class="text-xs text-gray-500">Exp. punten (basis)</div><div class="text-xl font-bold text-blue-800">${Math.round(expBase)}</div></div>
-        <div class="bg-green-50 rounded-lg p-4"><div class="text-xs text-gray-500">Exp. punten (met kopman)</div><div class="text-xl font-bold text-green-700">${Math.round(expKop)}</div><div class="text-xs text-green-600">+${Math.round(expKop-expBase)} bonus</div></div>
+        <div class="bg-blue-50 rounded-lg p-4"><div class="text-xs text-gray-500">Adj. punten (basis)</div><div class="text-xl font-bold text-blue-800">${Math.round(expAdj)}</div>${injured?'<div class="text-xs text-red-500">'+injured+' geblesseerd</div>':''}</div>
+        <div class="bg-green-50 rounded-lg p-4"><div class="text-xs text-gray-500">Adj. punten (met kopman)</div><div class="text-xl font-bold text-green-700">${Math.round(expKop)}</div><div class="text-xs text-green-600">+${Math.round(expKop-expAdj)} bonus</div></div>
         <div class="bg-orange-50 rounded-lg p-4"><div class="text-xs text-gray-500">Gem. koersen/renner</div><div class="text-xl font-bold text-orange-700">${avgR}</div></div>`;
 
-    document.getElementById('teamBody').innerHTML = optTeam.map((r,i) => `<tr>
-        <td class="text-gray-400">${i+1}</td><td class="font-medium">${r.name}${injuryBadge(r.id)}</td><td class="text-gray-500 text-xs">${r.team}</td>
+    document.getElementById('teamBody').innerHTML = optTeam.map((r,i) => `<tr class="${r.missedRaces.length ? 'bg-red-50' : ''}">
+        <td class="text-gray-400">${i+1}</td>
+        <td class="font-medium">${r.name}${injuryBadge(r.id)}${r.missedRaces.length ? ' <span class="text-xs text-red-500">mist '+r.missedRaces.length+'</span>' : ''}</td>
+        <td class="text-gray-500 text-xs">${r.team}</td>
         <td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td><td><span class="inline-block px-1.5 py-0.5 rounded-full text-xs font-medium ${tc(r.type)}">${r.type}</span></td>
         <td class="text-center">${r.numRaces}</td>
         <td class="text-center">${qb(r.q.sprint)}</td><td class="text-center">${qb(r.q.punch)}</td><td class="text-center">${qb(r.q.hill)}</td><td class="text-center">${qb(r.q.cobbles)}</td>
-        <td class="font-mono font-medium">${r.expTotal.toFixed(1)}</td><td class="font-mono text-xs">${r.value.toFixed(1)}</td>
+        <td class="font-mono font-medium ${r.adjExpTotal < r.expTotal ? 'text-red-600' : ''}">${r.adjExpTotal.toFixed(1)}</td>
+        <td class="font-mono text-xs">${r.adjValue.toFixed(1)}</td>
     </tr>`).join('');
 }
 
@@ -332,7 +382,7 @@ function renderBuilder() {
     const team = D.riders.filter(r => builderIds.has(r.id)).sort((a,b) => b.expTotal - a.expTotal);
     const cost = team.reduce((s,r) => s+r.price, 0);
     const left = BUDGET - cost;
-    const pts = team.reduce((s,r) => s+r.expTotal, 0);
+    const pts = team.reduce((s,r) => s+r.adjExpTotal, 0);
 
     document.getElementById('bCount').textContent = `${team.length}/20`;
     document.getElementById('bBudget').textContent = `€${(cost/1e6).toFixed(2)}M`;
@@ -340,9 +390,9 @@ function renderBuilder() {
     document.getElementById('bLeft').className = `text-xl font-bold ${left<0?'text-red-600':'text-green-600'}`;
     document.getElementById('bPts').textContent = pts.toFixed(0);
 
-    document.getElementById('bTeamBody').innerHTML = team.map(r => `<tr>
-        <td class="font-medium text-sm">${r.name}${injuryBadge(r.id)}</td><td class="text-gray-500 text-xs">${r.team}</td>
-        <td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td><td class="text-center">${r.numRaces}</td><td class="font-mono text-sm">${r.expTotal.toFixed(1)}</td>
+    document.getElementById('bTeamBody').innerHTML = team.map(r => `<tr class="${r.missedRaces.length ? 'bg-red-50' : ''}">
+        <td class="font-medium text-sm">${r.name}${injuryBadge(r.id)}${r.missedRaces.length ? ' <span class="text-xs text-red-500">-'+r.missedRaces.length+'</span>' : ''}</td><td class="text-gray-500 text-xs">${r.team}</td>
+        <td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td><td class="text-center">${r.numRaces}</td><td class="font-mono text-sm ${r.adjExpTotal < r.expTotal ? 'text-red-600' : ''}">${r.adjExpTotal.toFixed(1)}</td>
         <td><button onclick="toggleB(${r.id})" class="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">&minus;</button></td>
     </tr>`).join('') || '<tr><td colspan="6" class="text-gray-400 text-center py-8">Voeg renners toe via + knopje</td></tr>';
 
@@ -352,11 +402,11 @@ function renderBuilder() {
 function renderBuilderAvail() {
     const s = (document.getElementById('bSearch')?.value||'').toLowerCase();
     const avail = D.riders.filter(r => !builderIds.has(r.id) && r.numRaces>0 && (r.name.toLowerCase().includes(s)||r.team.toLowerCase().includes(s)))
-        .sort((a,b) => b.value - a.value).slice(0, 100);
+        .sort((a,b) => b.adjValue - a.adjValue).slice(0, 100);
     document.getElementById('bAvailBody').innerHTML = avail.map(r => `<tr>
         <td class="text-sm">${r.name}</td><td class="font-mono text-xs">€${r.priceM.toFixed(2)}M</td>
         <td><span class="inline-block px-1 py-0.5 rounded text-xs ${tc(r.type)}">${r.type}</span></td>
-        <td class="text-center">${r.numRaces}</td><td class="font-mono text-sm">${r.expTotal.toFixed(1)}</td>
+        <td class="text-center">${r.numRaces}</td><td class="font-mono text-sm ${r.adjExpTotal < r.expTotal ? 'text-red-600' : ''}">${r.adjExpTotal.toFixed(1)}</td>
         <td><button onclick="toggleB(${r.id})" class="text-xs px-2 py-0.5 rounded bg-scorito-100 text-scorito-700" ${builderIds.size>=20?'disabled':''}>&plus;</button></td>
     </tr>`).join('');
 }
@@ -376,8 +426,9 @@ async function fetchNews() {
     try {
         const resp = await fetch('/api/news');
         newsData = await resp.json();
+        applyInjuryAdjustments();
         renderNews();
-        renderRiders(); // re-render to show injury badges
+        renderRiders(); // re-render with adjusted points
     } catch (e) {
         document.getElementById('newsArticles').innerHTML = `<div class="bg-red-50 text-red-700 rounded-lg p-4">Fout bij laden: ${e.message}</div>`;
     }
@@ -411,24 +462,41 @@ function renderNews() {
         `<span class="text-xs px-2 py-1 rounded ${f.status==='ok'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${f.name}: ${f.count} artikelen</span>`
     ).join('')}</div>`;
 
+    // Severity labels
+    const sevLabel = { long: 'Lang (seizoen)', medium: 'Medium (~4 wk)', short: 'Kort (~1-2 wk)', dns: 'DNS', unknown: 'Onbekend' };
+    const sevColor = { long: 'bg-red-600', medium: 'bg-orange-500', short: 'bg-yellow-500', dns: 'bg-gray-500', unknown: 'bg-gray-400' };
+
     // Rider alerts (injuries/warnings)
     const alertsHtml = warnings.length > 0 ? `
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 class="font-bold text-red-800 mb-2">Blessure / DNS waarschuwingen (${warnings.length})</h3>
             <div class="space-y-2">
-                ${warnings.map(a => `
+                ${warnings.sort((a,b) => (b.missedRaces?.length||0) - (a.missedRaces?.length||0)).map(a => {
+                    const rider = D?.riders.find(r => r.id === a.id);
+                    const ptsLost = rider ? (rider.expTotal - rider.adjExpTotal).toFixed(1) : '?';
+                    return `
                     <div class="flex items-start gap-3 bg-white rounded p-3 border border-red-100">
                         <span class="text-red-500 text-lg mt-0.5">&#x26A0;</span>
-                        <div>
-                            <div class="font-medium">${a.name} <span class="text-xs text-gray-500">${a.team}</span></div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-medium">${a.name}</span>
+                                <span class="text-xs text-gray-500">${a.team}</span>
+                                <span class="text-xs text-white px-1.5 py-0.5 rounded ${sevColor[a.severity]||sevColor.unknown}">${sevLabel[a.severity]||'?'}</span>
+                                ${a.returnDate ? `<span class="text-xs text-gray-400">Terug: ~${a.returnDate}</span>` : ''}
+                            </div>
+                            ${a.missedRaces?.length ? `<div class="mt-1 flex gap-1 flex-wrap">
+                                <span class="text-xs text-red-600 font-medium">Mist ${a.missedRaces.length} koersen:</span>
+                                ${a.missedRaces.map(r => `<span class="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 line-through">${D?.raceNames?.[r] || r}</span>`).join('')}
+                            </div>` : ''}
+                            <div class="mt-1 text-xs text-red-600 font-medium">-${ptsLost} verwachte punten</div>
                             <div class="text-sm text-gray-600 mt-1">
-                                ${a.articles.filter(ar => ar.isInjury).slice(0, 3).map(ar =>
+                                ${a.articles.filter(ar => ar.isInjury).slice(0, 2).map(ar =>
                                     `<a href="${ar.link}" target="_blank" class="block text-scorito-600 hover:underline text-xs">${ar.title} <span class="text-gray-400">(${ar.source || 'News'})</span></a>`
                                 ).join('')}
                             </div>
                         </div>
-                    </div>
-                `).join('')}
+                    </div>`;
+                }).join('')}
             </div>
         </div>
     ` : '<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Geen blessurewaarschuwingen gevonden.</div>';
