@@ -1,3 +1,6 @@
 {
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/news", "destination": "/api/news" }
+  ]
 }
