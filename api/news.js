@@ -184,27 +184,12 @@ function matchRiders(articles, riders) {
           };
         }
 
-        // Upgrade severity to worst case across all articles
+        // Track all severity mentions to pick the most common/appropriate one
         if (isInjury) {
           alerts[rider.id].status = 'warning';
-          const severityRank = { long: 4, medium: 3, short: 2, dns: 1, unknown: 1 };
-          const currentRank = severityRank[alerts[rider.id].severity] || 0;
-          const newRank = severityRank[severity] || 0;
-          if (newRank > currentRank) {
-            alerts[rider.id].severity = severity;
-            const { missedRaces, returnDate } = getMissedRaces(severity, article.date);
-            alerts[rider.id].missedRaces = missedRaces;
-            alerts[rider.id].returnDate = returnDate;
-          }
-          // Merge missed races from all severity assessments
-          if (severity) {
-            const { missedRaces } = getMissedRaces(severity, article.date);
-            for (const r of missedRaces) {
-              if (!alerts[rider.id].missedRaces.includes(r)) {
-                alerts[rider.id].missedRaces.push(r);
-              }
-            }
-          }
+          if (!alerts[rider.id]._severityCounts) alerts[rider.id]._severityCounts = {};
+          const s = severity || 'unknown';
+          alerts[rider.id]._severityCounts[s] = (alerts[rider.id]._severityCounts[s] || 0) + 1;
         }
 
         alerts[rider.id].articles.push({
@@ -215,6 +200,45 @@ function matchRiders(articles, riders) {
       }
     }
     article.matchedRiders = matchedRiders.map(r => r.name);
+  }
+
+  // Post-process: determine final severity based on most frequent/severe classification
+  for (const alert of Object.values(alerts)) {
+    if (alert.status !== 'warning' || !alert._severityCounts) continue;
+    const counts = alert._severityCounts;
+
+    // If "long" keywords dominate (>50% of injury articles), use long
+    // If "short" keywords dominate, use short (e.g., illness)
+    // Otherwise use the highest severity that appears at least twice, or fallback to most frequent
+    const total = Object.values(counts).reduce((s, c) => s + c, 0);
+    const severityRank = { long: 4, medium: 3, short: 2, dns: 1, unknown: 0 };
+
+    // Pick severity: if short (illness) is most frequent, prefer short over medium/long
+    // This prevents "recovery" in a flu article from escalating to "long"
+    let best = 'unknown';
+    let bestCount = 0;
+    for (const [sev, count] of Object.entries(counts)) {
+      if (count > bestCount || (count === bestCount && severityRank[sev] > severityRank[best])) {
+        best = sev; bestCount = count;
+      }
+    }
+
+    // But if there's a clear "long" signal (fracture/surgery), that trumps frequency
+    if (counts.long && counts.long >= 2) best = 'long';
+    else if (counts.long === 1 && !counts.short && !counts.dns) best = 'long';
+
+    alert.severity = best;
+
+    // Get the most recent injury article date for calculating missed races
+    const injuryArticles = alert.articles.filter(a => a.isInjury);
+    const latestDate = injuryArticles.length > 0
+      ? injuryArticles.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0].date
+      : null;
+
+    const { missedRaces, returnDate } = getMissedRaces(best, latestDate);
+    alert.missedRaces = missedRaces;
+    alert.returnDate = returnDate;
+    delete alert._severityCounts;
   }
 
   return alerts;
